@@ -13,7 +13,7 @@ images:
   newTag: 97b20685b4df559d2260128a570211daee4beaea
 
 resources:
-- github.com/iamuseong-oss/catalog-service/k8s?ref=main
+- github.com/iamuseong-oss/catalog-service/k8s?ref=97b20685b4df559d2260128a570211daee4beaea
 replicas:
 - count: 2
   name: catalog-service
