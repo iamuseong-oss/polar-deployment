@@ -1,0 +1,17 @@
+GET http://192.168.49.2/books
+
+###
+
+POST http://192.168.49.2/books
+Content-Type: application/json
+
+{
+  "isbn": "1234567891",
+  "title": "Book 1",
+  "author": "Author 1",
+  "price": 1.00
+}
+
+###
+
+GET http://localhost:8080/orders

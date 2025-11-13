@@ -1,0 +1,24 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+configMapGenerator:
+  - behavior: merge
+    files:
+      - application-prod.yml
+    name: catalog-config
+
+images:
+  - name: catalog-service
+    newName: ghcr.io/iamuseong-oss/catalog-service
+    newTag: 15c0b9228f71476f2a1fa69c5681ae0c47a2a9cb
+
+resources:
+  - github.com/iamuseong-oss/catalog-service/k8s?ref=15c0b9228f71476f2a1fa69c5681ae0c47a2a9cb
+
+replicas:
+  - name: catalog-service
+    count: 2
+patches:
+  - path: patch-env.yml
+  - path: patch-resource.yml
+  - path: patch-volume.yml

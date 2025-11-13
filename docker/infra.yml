@@ -1,0 +1,102 @@
+services:
+
+  config-service:
+    image: 'config-service'
+    container_name: 'config-service'
+    ports:
+      - '8888:8888'
+    environment:
+      - 'BPL_JVM_THREAD_COUNT=50'
+      - 'SPRING_CLOUD_CONFIG_SERVER_GIT_URI=${GIT_URI}'
+      - 'SPRING_CLOUD_CONFIG_SERVER_GIT_USERNAME=${GIT_USER}'
+      - 'SPRING_CLOUD_CONFIG_SERVER_GIT_PASSWORD=${GIT_TOKEN}'
+
+  polar-postgres:
+    image: 'postgres:18'
+    container_name: 'polar-postgres'
+    ports:
+      - '5432:5432'
+    environment:
+      - 'POSTGRES_USER=user'
+      - 'POSTGRES_PASSWORD=password'
+    volumes:
+      - './postgresql/init.sql:/docker-entrypoint-initdb.d/init.sql'
+
+  polar-rabbitmq:
+    image: 'rabbitmq:4.1-management'
+    container_name: 'polar-rabbitmq'
+    ports:
+      - '5672:5672'
+      - '15672:15672'
+    volumes:
+      - './rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf'
+
+  polar-redis:
+    image: 'redis:8'
+    container_name: 'polar-redis'
+    ports:
+      - '6379:6379'
+
+  polar-keycloak:
+    image: 'quay.io/keycloak/keycloak:26.0'
+    container_name: 'polar-keycloak'
+    command: start-dev --import-realm
+    volumes:
+      - './keycloak:/opt/keycloak/data/import'
+    environment:
+      - 'KEYCLOAK_ADMIN=user'
+      - 'KEYCLOAK_ADMIN_PASSWORD=password'
+    ports:
+      - '8080:8080'
+
+  grafana:
+    image: 'grafana/grafana:10.4.3'
+    container_name: 'grafana'
+    depends_on:
+      - 'loki'
+      - 'prometheus'
+      - 'tempo'
+    ports:
+      - '3000:3000'
+    environment:
+      - 'GF_SECURITY_ADMIN_USER=user'
+      - 'GF_SECURITY_ADMIN_PASSWORD=password'
+    volumes:
+      - './observability/grafana/datasources/datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml'
+      - './observability/grafana/dashboards:/etc/grafana/provisioning/dashboards'
+      - './observability/grafana/grafana.ini:/etc/grafana/grafana.ini'
+
+  tempo:
+    image: grafana/tempo:2.5.0
+    container_name: tempo
+    command: -config.file /etc/tempo-config.yml
+    ports:
+      - '4317:4317'
+    volumes:
+      - ./observability/tempo/tempo.yml:/etc/tempo-config.yml
+
+  loki:
+    image: 'grafana/loki:2.9.8'
+    container_name: 'loki'
+    depends_on:
+      - 'fluent-bit'
+    ports:
+      - '3100:3100'
+
+  fluent-bit:
+    image: 'grafana/fluent-bit-plugin-loki:2.9.8-amd64'
+    container_name: 'fluent-bit'
+    ports:
+      - '24224:24224'
+    environment:
+      - 'LOKI_URL=http://loki:3100/loki/api/v1/push'
+    volumes:
+      - './observability/fluent-bit/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf'
+  
+  prometheus:
+    image: quay.io/prometheus/prometheus:v2.52.0
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml

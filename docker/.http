@@ -1,0 +1,5 @@
+GET http://localhost:9000/books
+
+###
+
+GET http://localhost:9001/actuator/health/readiness

@@ -1,0 +1,104 @@
+services:
+    
+  edge-service:
+    image: 'edge-service'
+    container_name: 'edge-service'
+    ports:
+      - '9000:9000'
+      - '8000:8000'
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    environment:
+      - 'BPL_JVM_THREAD_COUNT=50'
+      - 'BPL_DEBUG_ENABLED=true'
+      - 'BPL_DEBUG_PORT=8000'
+      - 'JAVA_TOOL_OPTIONS=-javaagent:/workspace/BOOT-INF/lib/opentelemetry-javaagent-1.33.3.jar'
+      - 'OTEL_SERVICE_NAME=edge-service'
+      - 'OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317'
+      - 'OTEL_METRICS_EXPORTER=none'
+      - 'SPRING_CLOUD_CONFIG_URI=http://config-service:8888'
+      - 'CATALOG_SERVICE_URI=http://catalog-service:9001'
+      - 'ORDER_SERVICE_URI=http://order-service:9002'
+      - 'SPA_SERVICE_URI=http://polar-ui:9004'
+      - 'SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_ISSUER_URI=http://host.docker.internal:8080/realms/PolarBookshop'
+      - 'SPRING_DATA_REDIS_HOST=polar-redis'
+      - 'POLAR_ALLOWED_ORIGIN_PATTERNS=http://localhost:9000,null'
+      - 'POLAR_ALLOWED_HEADERS=Content-Type,Authorization'
+    logging:
+      driver: 'fluentd'
+      options:
+        fluentd-address: '127.0.0.1:24224'
+
+  catalog-service:
+    image: 'catalog-service'
+    container_name: 'catalog-service'
+    ports:
+      - '9001:9001'
+      - '8001:8001'
+    environment:
+      - 'BPL_JVM_THREAD_COUNT=50'
+      - 'BPL_DEBUG_ENABLED=true'
+      - 'BPL_DEBUG_PORT=8001'
+      - 'JAVA_TOOL_OPTIONS=-javaagent:/workspace/BOOT-INF/lib/opentelemetry-javaagent-1.33.3.jar'
+      - 'OTEL_SERVICE_NAME=catalog-service'
+      - 'OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317'
+      - 'OTEL_METRICS_EXPORTER=none'
+      - 'SPRING_CLOUD_CONFIG_URI=http://config-service:8888'
+      - 'SPRING_DATASOURCE_URL=jdbc:postgresql://polar-postgres:5432/polardb_catalog'
+    logging:
+      driver: 'fluentd'
+      options:
+        fluentd-address: '127.0.0.1:24224'
+
+  order-service:
+    image: 'order-service'
+    container_name: 'order-service'
+    ports:
+      - '9002:9002'
+      - '8002:8002'
+    environment:
+      - 'BPL_JVM_THREAD_COUNT=50'
+      - 'BPL_DEBUG_ENABLED=true'
+      - 'BPL_DEBUG_PORT=8002'
+      - 'JAVA_TOOL_OPTIONS=-javaagent:/workspace/BOOT-INF/lib/opentelemetry-javaagent-1.33.3.jar'
+      - 'OTEL_SERVICE_NAME=order-service'
+      - 'OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317'
+      - 'OTEL_METRICS_EXPORTER=none'
+      - 'SPRING_CLOUD_CONFIG_URI=http://config-service:8888'
+      - 'SPRING_RABBITMQ_HOST=polar-rabbitmq'
+      - 'SPRING_R2DBC_URL=r2dbc:postgresql://polar-postgres:5432/polardb_order'
+      - 'SPRING_FLYWAY_URL=jdbc:postgresql://polar-postgres:5432/polardb_order'
+      - 'POLAR_CATALOG_SERVICE_URI=http://catalog-service:9001'
+    logging:
+      driver: 'fluentd'
+      options:
+        fluentd-address: '127.0.0.1:24224'
+        
+  dispatcher-service:
+    image: 'dispatcher-service'
+    container_name: 'dispatcher-service'
+    ports:
+      - '9003:9003'
+      - '8003:8003'
+    environment:
+      - 'BPL_JVM_THREAD_COUNT=50'
+      - 'BPL_DEBUG_ENABLED=true'
+      - 'BPL_DEBUG_PORT=8003'
+      - 'JAVA_TOOL_OPTIONS=-javaagent:/workspace/BOOT-INF/lib/opentelemetry-javaagent-1.33.3.jar'
+      - 'OTEL_SERVICE_NAME=dispatcher-service'
+      - 'OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317'
+      - 'OTEL_METRICS_EXPORTER=none'
+      - 'SPRING_CLOUD_CONFIG_URI=http://config-service:8888'
+      - 'SPRING_RABBITMQ_HOST=polar-rabbitmq'
+    logging:
+      driver: 'fluentd'
+      options:
+        fluentd-address: '127.0.0.1:24224'
+
+  polar-ui:
+    image: 'ghcr.io/polarbookshop/polar-ui:latest'
+    container_name: 'polar-ui'
+    ports:
+      - '9004:9004'
+    environment:
+      - 'PORT=9004'
